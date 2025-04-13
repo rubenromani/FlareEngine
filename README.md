@@ -1,2 +1,2 @@
-# BacktestEngine2
-A trading strategy backtest engine
+# FlareEngine
+An investment and trading strategy backtest and optimization engine
