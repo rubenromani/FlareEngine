@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from numba import njit
 import os
-from core.bar import Bar
+from src.core.bar import Bar
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(script_dir, "..", "data", "spy.csv")
@@ -21,8 +21,7 @@ class DataManager:
 
         self.raw_data = self._load_market_data(csv_filepath)
         self.optimized_data = self._convert_to_optimized_structure(self.raw_data)
-
-        self.bars = self._create_bars()
+        self._bars = self._create_bars()
         
 
     def _load_market_data(self, filepath):
@@ -95,7 +94,7 @@ class DataManager:
             )
             bars.append(bar)
 
-        self.bars = np.array(bars, dtype=Bar)
+        return np.array(bars, dtype=Bar)
     
 
     @property  
@@ -124,7 +123,7 @@ class DataManager:
     
     @property
     def bars(self):
-        return self.bars
+        return self._bars
     
 
 data_manager = DataManager(data_path)

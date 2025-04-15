@@ -1,7 +1,7 @@
 import numpy as np
-from strategy.base_strategy import Strategy
-from core.event import BarEvent, OrderEvent, FillEvent
-from core.dispatcher import dispatch
+from src.strategy.base_strategy import Strategy
+from src.core.event import BarEvent, OrderEvent, FillEvent
+from src.core.dispatcher import dispatch
 
 class MovingAverageStrategy(Strategy):
     def __init__(self, old_data=None):
@@ -10,9 +10,10 @@ class MovingAverageStrategy(Strategy):
         self.long_window = 200
         self.short_ma = 0.0
         self.long_ma = 0.0
+        self.position = 0
         self.data_buffer = old_data or np.array([], dtype=np.float32)
         
-        if self.data_buffer and len(self.data_buffer) >= self.long_window:
+        if self.data_buffer.size >= self.long_window:
             self.data_buffer = self.data_buffer[-self.long_window:]
             self.short_ma = np.mean(self.data_buffer[-self.short_window:])
             self.long_ma = np.mean(self.data_buffer[-self.long_window:])
@@ -29,12 +30,19 @@ class MovingAverageStrategy(Strategy):
             self.long_ma = np.mean(self.data_buffer[-self.long_window:])
             order_event = self._check_signals(bar_event)
 
+        if self.data_buffer.size >= 2*self.long_window:
+            self.data_buffer = self.data_buffer[-self.long_window:]
+
         if order_event is not None:
             dispatch(self, order_event)
 
     def _check_signals(self, bar_event):
         """Check for buy/sell signals"""
-        if self.short_ma > self.long_ma:
+        if self.position < 1 and self.short_ma > self.long_ma:
+            self.position = 1
             return OrderEvent(bar_event.symbol, 'MARKET', 1, 'BUY')
-        elif self.short_ma < self.long_ma:
+        elif self.position > -1 and self.short_ma < self.long_ma:
+            self.position = -1
             return OrderEvent(bar_event.symbol, 'MARKET', 1, 'SELL')
+        
+        # TODO: replace position with a request from portfolio
