@@ -2,7 +2,6 @@ import numpy as np
 from datetime import datetime
 from src.strategy.base_strategy import Strategy
 from src.core.event import BarEvent, OrderEvent, FillEvent
-from src.core.dispatcher import dispatch
 
 class MovingAverageStrategy(Strategy):
     def __init__(self, old_data=None):
@@ -35,8 +34,7 @@ class MovingAverageStrategy(Strategy):
             self.data_buffer = self.data_buffer[-self.long_window:]
 
         if order_event is not None:
-            print(f"{datetime.fromtimestamp(bar_event.bar.timestamp)}")
-            dispatch(self, order_event)
+            self.emit_order(order_event)
 
     def _check_signals(self, bar_event):
         """Check for buy/sell signals"""

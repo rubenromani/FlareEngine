@@ -8,9 +8,8 @@ import logging
 from collections import deque
 from src.core.bar import Bar
 
-# Configurazione del logger
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.ERROR,
     format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
     filename='app.log'
 )
@@ -37,7 +36,7 @@ class DataManager:
     '''
     def _backtest_data_stream_callback(self, symbol, bar):
         """Callback function for backtest data stream"""
-        logging.info(f"Backtest data stream callback for {symbol}: {bar}")
+        #logging.info(f"Backtest data stream callback for {symbol}: {bar}")
         with self.lock:
             self._bars[symbol].append(bar)
     '''
@@ -53,10 +52,10 @@ class DataManager:
         
         with self.lock:
             if len(self._bars[symbol]) != 0:
-                logging.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
+                #logging.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
                 return self._bars[symbol].popleft()
             
-            logging.info(f"No bars available for {symbol}")
+            #logging.info(f"No bars available for {symbol}")
             return None
         
     def is_data_stream_working(self, symbol):
@@ -68,11 +67,11 @@ class DataManager:
 
     def start_data_live_streams(self):
         """Start all data streams"""
-        logging.info("Starting data streams")
+        #logging.info("Starting data streams")
         for key, value in self._data_streams.items():
             if value.type == 'backtest':
                 continue
-            logging.info(f"Starting data stream for {key}")
+            #logging.info(f"Starting data stream for {key}")
             self._threads[key] = threading.Thread(
                 target=value.run, 
                 args=(
@@ -194,7 +193,7 @@ class BacktestDataStream(DataStream):
             return None
         
         bar = self._bars[self._bar_index]
-        logging.info(f"Date: {datetime.fromtimestamp(bar.timestamp)}")
+        #logging.info(f"Date: {datetime.fromtimestamp(bar.timestamp)}")
         self._bar_index += 1
         return bar
 

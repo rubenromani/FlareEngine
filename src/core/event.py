@@ -23,6 +23,14 @@ class OrderEvent(Event):
         self.price = price
         self.type = 'ORDER'
 
+    def __str__(self):
+        return (f"{self.symbol}, "
+                f"{self.order_type}, "
+                f"{self.quantity}, "
+                f"{self.direction}, "
+                f"{self.price}, "
+                f"{self.type}")
+
 class FillEvent(Event):
     """Order execution event"""
 
