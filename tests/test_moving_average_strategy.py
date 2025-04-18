@@ -17,12 +17,8 @@ class TestMovingAverageStrategy(unittest.TestCase):
     def test_on_bar(self):
         """Test the on_bar method of the MovingAverageStrategy"""
 
-        while True:
-            bar = self.data_manager.get_next_bar(self.symbol)
-            if bar is None:
-                break
-
-            self.moving_average_strategy.on_bar(BarEvent(symbol='XXX', bar=bar))
+        while self.data_manager.get_next_bars():
+            pass
 
 if __name__ == '__main__':
     unittest.main()

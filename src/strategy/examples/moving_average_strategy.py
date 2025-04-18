@@ -20,7 +20,7 @@ class MovingAverageStrategy(Strategy):
 
         
 
-    def on_bar(self, bar_event):
+    def on_new_bar(self, sender, bar_event):
         """Handle new bar event"""
         self.data_buffer = np.append(self.data_buffer, bar_event.bar.close)
 

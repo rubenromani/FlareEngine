@@ -3,10 +3,12 @@ import numpy as np
 import os
 import time
 import threading
+from collections import deque
 from datetime import datetime
 from src.logging.logger_provider import get_logger
-from collections import deque
 from src.core.types import Bar
+from src.core.dispatcher import Dispatcher
+from src.core.event import BarEvent
 
 logger = get_logger(__name__, "CRITICAL")  
 
@@ -21,6 +23,7 @@ class DataManager:
         if not isinstance(data_streams, list):
             raise ValueError("data_streams should be a list of DataStream objects")
         
+        self.dispatcher = Dispatcher()
         self._data_streams = {}
         self._bars = {}
         self._threads = {}
@@ -41,18 +44,29 @@ class DataManager:
         """Callback function for live data stream"""
         pass
 
-    def get_next_bar(self, symbol):
+    def get_next_bars(self):
         """Get next bar for a specific symbol"""
-        if self._data_streams[symbol].type == 'backtest':
-            return self._data_streams[symbol].get_next_bar()
+        valid = False
+        for key, data_stream in self._data_streams.items():
+            bar = None
+            if data_stream.type == 'backtest':
+                bar = data_stream.get_next_bar()
+
+            """
+            else:
+                with self.lock:
+                    try:
+                        logger.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
+                        bar = self._bars[symbol].popleft()
+                    except IndexError:
+                        logger.info(f"No bars available for {symbol}")
+                        return None
+            """
+            if bar is not None:
+                self.dispatcher.publish("new_bar", self, BarEvent(bar, key, ))
+                valid = True
         
-        with self.lock:
-            try:
-                logger.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
-                return self._bars[symbol].popleft()
-            except IndexError:
-                logger.info(f"No bars available for {symbol}")
-                return None
+        return valid;
         
     def is_data_stream_working(self, symbol):
         """Check if the data stream is working"""
