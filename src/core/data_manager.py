@@ -4,15 +4,11 @@ import os
 import time
 import threading
 from datetime import datetime
-import logging
+from src.logging.logger_provider import get_logger
 from collections import deque
 from src.core.bar import Bar
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
-    filename='app.log'
-)
+logger = get_logger(__name__, "CRITICAL")  
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(script_dir, "..", "..", "data", "spy.csv")
@@ -36,7 +32,7 @@ class DataManager:
     '''
     def _backtest_data_stream_callback(self, symbol, bar):
         """Callback function for backtest data stream"""
-        #logging.info(f"Backtest data stream callback for {symbol}: {bar}")
+        #logger.info(f"Backtest data stream callback for {symbol}: {bar}")
         with self.lock:
             self._bars[symbol].append(bar)
     '''
@@ -51,12 +47,12 @@ class DataManager:
             return self._data_streams[symbol].get_next_bar()
         
         with self.lock:
-            if len(self._bars[symbol]) != 0:
-                #logging.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
+            try:
+                logger.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
                 return self._bars[symbol].popleft()
-            
-            #logging.info(f"No bars available for {symbol}")
-            return None
+            except IndexError:
+                logger.info(f"No bars available for {symbol}")
+                return None
         
     def is_data_stream_working(self, symbol):
         """Check if the data stream is working"""
@@ -67,11 +63,11 @@ class DataManager:
 
     def start_data_live_streams(self):
         """Start all data streams"""
-        #logging.info("Starting data streams")
+        logger.info("Starting data streams")
         for key, value in self._data_streams.items():
             if value.type == 'backtest':
                 continue
-            #logging.info(f"Starting data stream for {key}")
+            logger.info(f"Starting data stream for {key}")
             self._threads[key] = threading.Thread(
                 target=value.run, 
                 args=(
@@ -188,14 +184,14 @@ class BacktestDataStream(DataStream):
     
     def get_next_bar(self):
         """Get next bar for backtesting"""
-
-        if self._bar_index >= len(self._bars):
-            return None
         
-        bar = self._bars[self._bar_index]
-        #logging.info(f"Date: {datetime.fromtimestamp(bar.timestamp)}")
-        self._bar_index += 1
-        return bar
+        try:
+            bar = self._bars[self._bar_index]
+            logger.info(f"Date: {datetime.fromtimestamp(bar.timestamp)}")
+            self._bar_index += 1
+            return bar
+        except IndexError:
+            return None
 
     @property  
     def dates(self):

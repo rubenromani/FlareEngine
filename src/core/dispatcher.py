@@ -1,17 +1,7 @@
 from src.core.event import BarEvent, OrderEvent, FillEvent
-import logging
+from src.logging.logger_provider import get_logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
-    filename='app.log'
-)
-
-def dispatch(obj, event):
-    if isinstance(event, OrderEvent):
-        # Handle order event
-        print(f"Handling order event: {event.symbol}, {event.order_type}, {event.quantity}, {event.direction}")
-
+logger = get_logger(__name__, "DEBUG")
 
 class Dispatcher:
     _instance = None
@@ -29,7 +19,7 @@ class Dispatcher:
         self.subscribers[event_type].append(callback)
 
     def publish(self, event_type, sender, data=None):
-        logging.info(f"Published: {event_type} event, sender {sender.__class__.__name__}, data {data}")
+        logger.info(f"Published: {event_type} event, sender {sender.__class__.__name__}, data {data}")
         if event_type in self.subscribers:
             for callback in self.subscribers[event_type]:
                 callback(sender, data)

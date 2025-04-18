@@ -6,12 +6,6 @@ from src.strategy.examples.moving_average_strategy import MovingAverageStrategy
 from src.core.data_manager import DataManager, BacktestDataStream, data_path
 from src.core.event import BarEvent, OrderEvent, FillEvent
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
-    filename='app.log'
-)
-
 class TestMovingAverageStrategy(unittest.TestCase):
     def setUp(self):
         self.symbol = "XXX"
@@ -23,11 +17,9 @@ class TestMovingAverageStrategy(unittest.TestCase):
     def test_on_bar(self):
         """Test the on_bar method of the MovingAverageStrategy"""
 
-        logging.info("Starting test_on_bar")
         while True:
             bar = self.data_manager.get_next_bar(self.symbol)
             if bar is None:
-                logging.info(f"End bars")
                 break
 
             self.moving_average_strategy.on_bar(BarEvent(symbol='XXX', bar=bar))
