@@ -40,39 +40,41 @@ def get_logger(name: str, level: str):
     """
 
     
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(name)
+                               
+    if not logger.handlers:
 
-    handler = logging.FileHandler('app.log')
-    formatter = logging.Formatter('%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    match level:
-        case "DEBUG":
-            handler.setLevel(logging.DEBUG)
-        case "INFO":
-            handler.setLevel(logging.INFO)
-        case "WARNING":
-            handler.setLevel(logging.WARNING)
-        case "ERRORR":
-            handler.setLevel(logging.ERROR)
-        case "CRITICAL":
-            handler.setLevel(logging.CRITICAL)
-        case _:
-            handler.setLevel(logging.ERROR)
-
-    logger.addHandler(handler)
-
-    match level:
-        case "DEBUG":
-            logger.setLevel(logging.DEBUG)
-        case "INFO":
-            logger.setLevel(logging.INFO)
-        case "WARNING":
-            logger.setLevel(logging.WARNING)
-        case "ERRORR":
-            logger.setLevel(logging.ERROR)
-        case "CRITICAL":
-            logger.setLevel(logging.CRITICAL)
-        case _:
-            logger.setLevel(logging.ERROR)
+        handler = logging.FileHandler('app.log')
+        formatter = logging.Formatter('%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        match level:
+            case "DEBUG":
+                handler.setLevel(logging.DEBUG)
+            case "INFO":
+                handler.setLevel(logging.INFO)
+            case "WARNING":
+                handler.setLevel(logging.WARNING)
+            case "ERRORR":
+                handler.setLevel(logging.ERROR)
+            case "CRITICAL":
+                handler.setLevel(logging.CRITICAL)
+            case _:
+                handler.setLevel(logging.ERROR)
+    
+        logger.addHandler(handler)
+    
+        match level:
+            case "DEBUG":
+                logger.setLevel(logging.DEBUG)
+            case "INFO":
+                logger.setLevel(logging.INFO)
+            case "WARNING":
+                logger.setLevel(logging.WARNING)
+            case "ERRORR":
+                logger.setLevel(logging.ERROR)
+            case "CRITICAL":
+                logger.setLevel(logging.CRITICAL)
+            case _:
+                logger.setLevel(logging.ERROR)
 
     return logger
