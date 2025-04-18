@@ -1,4 +1,4 @@
-from src.core.bar import Bar
+from src.core.types import Bar
 
 class Event:
     """Base class for events system"""

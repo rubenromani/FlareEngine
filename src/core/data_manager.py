@@ -6,7 +6,7 @@ import threading
 from datetime import datetime
 from src.logging.logger_provider import get_logger
 from collections import deque
-from src.core.bar import Bar
+from src.core.types import Bar
 
 logger = get_logger(__name__, "CRITICAL")  
 
@@ -184,7 +184,7 @@ class BacktestDataStream(DataStream):
     
     def get_next_bar(self):
         """Get next bar for backtesting"""
-        
+
         try:
             bar = self._bars[self._bar_index]
             logger.info(f"Date: {datetime.fromtimestamp(bar.timestamp)}")
