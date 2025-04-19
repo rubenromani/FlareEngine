@@ -9,7 +9,7 @@ from src.core.event import BarEvent, OrderEvent, FillEvent
 class TestMovingAverageStrategy(unittest.TestCase):
     def setUp(self):
         self.symbol = "XXX"
-        self.moving_average_strategy = MovingAverageStrategy()
+        self.moving_average_strategy = MovingAverageStrategy(self.symbol)
         self.data_stream = BacktestDataStream(symbol=self.symbol, csv_filepath=data_path)
         self.data_manager = DataManager([self.data_stream])
         

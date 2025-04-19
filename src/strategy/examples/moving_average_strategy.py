@@ -4,8 +4,8 @@ from src.strategy.base_strategy import Strategy
 from src.core.event import BarEvent, OrderEvent, FillEvent
 
 class MovingAverageStrategy(Strategy):
-    def __init__(self, old_data=None):
-        super().__init__()
+    def __init__(self, symbol, old_data=None):
+        super().__init__(symbol)
         self.short_window = 50
         self.long_window = 200
         self.short_ma = 0.0

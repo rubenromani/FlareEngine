@@ -4,10 +4,10 @@ from src.core.event import BarEvent, OrderEvent
 class Strategy:
     """Base class for all strategies"""
 
-    def __init__(self):
-        self.current_positions = {}
+    def __init__(self, symbol):
+        self.symbol = symbol
         self.dispatcher = Dispatcher()
-        self.dispatcher.subscribe("new_bar", self.on_new_bar)
+        self.dispatcher.subscribe(f"new_bar_{symbol}", self.on_new_bar)
 
     def on_new_bar(self, sender, bar_event: BarEvent):
         """Handle new bar event"""

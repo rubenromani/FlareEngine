@@ -47,7 +47,7 @@ class DataManager:
     def get_next_bars(self):
         """Get next bar for a specific symbol"""
         valid = False
-        for key, data_stream in self._data_streams.items():
+        for symbol, data_stream in self._data_streams.items():
             bar = None
             if data_stream.type == 'backtest':
                 bar = data_stream.get_next_bar()
@@ -63,7 +63,7 @@ class DataManager:
                         return None
             """
             if bar is not None:
-                self.dispatcher.publish("new_bar", self, BarEvent(bar, key, ))
+                self.dispatcher.publish(f"new_bar_{symbol}", self, BarEvent(bar, symbol ))
                 valid = True
         
         return valid;
