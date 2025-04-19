@@ -8,7 +8,7 @@ class Strategy:
         self.symbol = symbol
         self.timeframe = timeframe
         self.dispatcher = Dispatcher()
-        self.dispatcher.subscribe(f"new_bar_{self.symbol}_{self.timeframe}", self.on_new_bar)
+        self.dispatcher.subscribe(f"new_bar_{self.symbol}_{self.timeframe}", self._on_new_bar)
 
     def _on_new_bar(self, sender, bar_event: BarEvent):
         """Handle new bar event"""

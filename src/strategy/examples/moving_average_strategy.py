@@ -20,7 +20,7 @@ class MovingAverageStrategy(Strategy):
 
         
 
-    def _on_new_bar(self, sender, bar_event):
+    def _on_new_bar(self, sender, bar_event: BarEvent):
         """Handle new bar event"""
         self.data_buffer = np.append(self.data_buffer, bar_event.bar.close)
 
@@ -34,7 +34,7 @@ class MovingAverageStrategy(Strategy):
             self.data_buffer = self.data_buffer[-self.long_window:]
 
         if order_event is not None:
-            self.emit_order(order_event)
+            self._emit_order(order_event)
 
     def _check_signals(self, bar_event):
         """Check for buy/sell signals"""
