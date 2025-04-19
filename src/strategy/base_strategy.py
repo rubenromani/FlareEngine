@@ -4,14 +4,15 @@ from src.core.event import BarEvent, OrderEvent
 class Strategy:
     """Base class for all strategies"""
 
-    def __init__(self, symbol):
+    def __init__(self, symbol, timeframe):
         self.symbol = symbol
+        self.timeframe = timeframe
         self.dispatcher = Dispatcher()
-        self.dispatcher.subscribe(f"new_bar_{symbol}", self.on_new_bar)
+        self.dispatcher.subscribe(f"new_bar_{self.symbol}_{self.timeframe}", self.on_new_bar)
 
-    def on_new_bar(self, sender, bar_event: BarEvent):
+    def _on_new_bar(self, sender, bar_event: BarEvent):
         """Handle new bar event"""
         raise NotImplementedError("on_bar method must be implemented in subclasses")
     
-    def emit_order(self, order_event: OrderEvent):
-        self.dispatcher.publish("strategy_order", self, order_event)
+    def _emit_order(self, order_event: OrderEvent):
+        self.dispatcher.publish(f"strategy_order", self, order_event)

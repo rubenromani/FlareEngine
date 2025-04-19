@@ -4,14 +4,14 @@ from src.strategy.base_strategy import Strategy
 from src.core.event import BarEvent, OrderEvent, FillEvent
 
 class MovingAverageStrategy(Strategy):
-    def __init__(self, symbol, old_data=None):
-        super().__init__(symbol)
+    def __init__(self, symbol, timeframe):
+        super().__init__(symbol, timeframe)
         self.short_window = 50
         self.long_window = 200
         self.short_ma = 0.0
         self.long_ma = 0.0
         self.position = 0
-        self.data_buffer = old_data or np.array([], dtype=np.float32)
+        self.data_buffer = np.array([], dtype=np.float32)
         
         if self.data_buffer.size >= self.long_window:
             self.data_buffer = self.data_buffer[-self.long_window:]
@@ -20,7 +20,7 @@ class MovingAverageStrategy(Strategy):
 
         
 
-    def on_new_bar(self, sender, bar_event):
+    def _on_new_bar(self, sender, bar_event):
         """Handle new bar event"""
         self.data_buffer = np.append(self.data_buffer, bar_event.bar.close)
 

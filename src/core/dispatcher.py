@@ -20,7 +20,7 @@ class Dispatcher:
         return cls._instance
     
     def subscribe(self, event_type, callback):
-     
+        logger.debug(f"Subscription: {event_type} event, subscriber {callback.__class__.__name__}")
         if event_type not in self.subscribers:
             self.subscribers[event_type] = []
         self.subscribers[event_type].append(callback)

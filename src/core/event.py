@@ -8,7 +8,7 @@ The module implements a hierarchical event system with a base Event class
 and specific event types like BarEvent, OrderEvent, and FillEvent.
 
 """
-
+from datetime import datetime
 from src.core.types import Bar
 
 
@@ -77,6 +77,7 @@ class BarEvent(Event):
             str: A string containing all bar event details.
         """
         return (f"{self._symbol}, "
+                f"D: {datetime.fromtimestamp(self._bar.timestamp).strftime('%Y-%m-%d %H:%M:%S')}, "
                 f"O: {self._bar.open}, "
                 f"H: {self._bar.high}, "
                 f"L: {self._bar.low}, "

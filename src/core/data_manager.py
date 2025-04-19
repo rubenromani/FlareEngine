@@ -12,9 +12,6 @@ from src.core.event import BarEvent
 
 logger = get_logger(__name__, "CRITICAL")  
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(script_dir, "..", "..", "data", "spy.csv")
-
 class DataManager:
     """Class to manages data streams"""
     def __init__(self, data_streams):
@@ -30,7 +27,6 @@ class DataManager:
 
         for i in range(len(data_streams)):
             self._data_streams[data_streams[i].symbol] = data_streams[i]
-            self._bars[data_streams[i].symbol] = deque()
 
     '''
     def _backtest_data_stream_callback(self, symbol, bar):
@@ -45,28 +41,47 @@ class DataManager:
         pass
 
     def get_next_bars(self):
-        """Get next bar for a specific symbol"""
-        valid = False
-        for symbol, data_stream in self._data_streams.items():
-            bar = None
-            if data_stream.type == 'backtest':
-                bar = data_stream.get_next_bar()
+        """Get the newt bar"""
 
-            """
-            else:
-                with self.lock:
-                    try:
-                        logger.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
-                        bar = self._bars[symbol].popleft()
-                    except IndexError:
-                        logger.info(f"No bars available for {symbol}")
-                        return None
-            """
-            if bar is not None:
-                self.dispatcher.publish(f"new_bar_{symbol}", self, BarEvent(bar, symbol ))
-                valid = True
-        
-        return valid;
+        for symbol, data_stream in self._data_streams.items():
+            key = f"{symbol}_{data_stream.timeframe}"
+            if key not in self._bars:
+                if data_stream.type == 'backtest':
+                    bar = data_stream.get_next_bar()
+                    if bar is not None:
+                        self._bars[key] = bar
+                
+                """
+                else:
+                    with self.lock:
+                        try:
+                            logger.info(f"Getting next bar for {symbol}: {self._bars[symbol][0]}")
+                            bar = self._bars[symbol].popleft()
+                            if bar is not None:
+                                self._bars[key] = bar
+                        except IndexError:
+                            logger.info(f"No bars available for {symbol}")
+                """
+
+        if not self._bars: 
+            return False
+
+        nearest_key = None
+        nearest_time = float('inf')
+
+        for key, bar in self._bars.items():
+            if bar.timestamp < nearest_time:
+                nearest_time = bar.timestamp
+                nearest_key = key
+
+        if nearest_key:
+            bar_to_publish = self._bars[nearest_key]
+            self.dispatcher.publish(f"new_bar_{nearest_key}", self, 
+                                   BarEvent(bar_to_publish, nearest_key.split('_')[0]))
+            del self._bars[nearest_key]
+            return True
+
+        return False
         
     def is_data_stream_working(self, symbol):
         """Check if the data stream is working"""
@@ -97,18 +112,24 @@ class DataManager:
 
 class DataStream():
 
-    def __init__(self, symbol):
+    def __init__(self, symbol, timeframe):
         self._symbol = symbol
+        self._timeframe = timeframe
         pass
     
     @property
     def symbol(self):
         """Get symbol"""
         return self._symbol
+    
+    @property
+    def timeframe(self):
+        """Get the timeframe"""
+        return self._timeframe
 
 class BacktestDataStream(DataStream):
-    def __init__ (self, symbol, csv_filepath=None):
-        super().__init__(symbol)
+    def __init__ (self, symbol, timeframe, csv_filepath=None):
+        super().__init__(symbol, timeframe)
         self.raw_data = None
         self.optimized_data = None
         self._bar_index = 0
@@ -138,8 +159,8 @@ class BacktestDataStream(DataStream):
 
         df = pd.read_csv(filepath, 
                          dtype=dtypes, 
-                         parse_dates=['Date'],
-                         usecols=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
+                         parse_dates=['Datetime'],
+                         usecols=['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
 
         return df
@@ -170,7 +191,7 @@ class BacktestDataStream(DataStream):
     def _convert_to_optimized_structure(self, df):
         """Convert DataFrame to optimized structure."""
 
-        dates_epoch = (df['Date'].astype(np.int64) // 10**9).to_numpy(dtype=np.int64)
+        dates_epoch = (df['Datetime'].astype(np.int64) // 10**9).to_numpy(dtype=np.int64)
         opens = df['Open'].to_numpy(dtype=np.float32)
         highs = df['High'].to_numpy(dtype=np.float32)
         lows = df['Low'].to_numpy(dtype=np.float32)
