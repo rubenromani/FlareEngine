@@ -1,3 +1,10 @@
+"""
+Available data fields:
+    - last_prices: Dict[]
+    - available_balance : float
+    - data_streams : List[str]
+"""
+
 import threading
 
 class SharedRepository:

@@ -7,6 +7,13 @@ approach to process events asynchronously.
 The Dispatcher follows the Singleton pattern to ensure a single event bus
 exists throughout the application.
 
+Available events:
+    - new_data_stream : string
+    - new_bar_symbol_timeframe : BarEvent
+    - strategy_order : OrderEvent
+    - risk_manager_orer : OrderEvent
+    - order_manager_order : OrderEvent
+    
 """
 
 import queue
@@ -58,7 +65,7 @@ class Dispatcher:
             callback: Function to be called when the event occurs.
                       The callback should accept (sender, data) parameters.
         """
-        logger.debug(f"Subscription: {event_type} event, subscriber {callback.__class__.__name__}")
+        logger.debug(f"Subscription: {event_type} event, subscriber {callback.__name__}")
         with self.subscribers_lock:
             if event_type not in self.subscribers:
                 self.subscribers[event_type] = []

@@ -8,6 +8,7 @@ from datetime import datetime
 from src.logging.logger_provider import get_logger
 from src.core.types import Bar
 from src.core.dispatcher import Dispatcher
+from src.core.shared_repository import SharedRepository
 from src.core.event import BarEvent
 
 logger = get_logger(__name__, "CRITICAL")  
@@ -20,10 +21,11 @@ class DataManager:
         if not isinstance(data_streams, list):
             raise ValueError("data_streams should be a list of DataStream objects")
         
-        self.dispatcher = Dispatcher()
         self._data_streams = {}
         self._bars = {}
         self._threads = {}
+        self.dispatcher = Dispatcher()
+        self.repo = SharedRepository()
 
         for i in range(len(data_streams)):
             self._data_streams[data_streams[i].symbol] = data_streams[i]
@@ -76,8 +78,15 @@ class DataManager:
 
         if nearest_key:
             bar_to_publish = self._bars[nearest_key]
+            symbol = nearest_key.split('_')[0]
+
+            # update the price in the repository
+            last_prices = self.repo.get("last_prices", default={})
+            last_prices[symbol] = bar_to_publish
+            self.repo.set("last_prices", last_prices)
+
             self.dispatcher.publish(f"new_bar_{nearest_key}", self, 
-                                   BarEvent(bar_to_publish, nearest_key.split('_')[0]))
+                                   BarEvent(bar_to_publish, symbol))
             del self._bars[nearest_key]
             return True
 
@@ -115,7 +124,14 @@ class DataStream():
     def __init__(self, symbol, timeframe):
         self._symbol = symbol
         self._timeframe = timeframe
-        pass
+        self._dispatcher = Dispatcher()
+        self._repo = SharedRepository()
+
+        data_streams = self._repo.get("data_streams") or []
+        new_data_stream = f"symbol_{symbol}_{timeframe}"
+        data_streams.append(new_data_stream)
+        self._repo.set("data_streams", data_streams)
+        self._dispatcher.publish("new_data_stream", self, new_data_stream)
     
     @property
     def symbol(self):
