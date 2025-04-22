@@ -13,7 +13,7 @@ Available events:
     - strategy_order : OrderEvent
     - risk_manager_orer : OrderEvent
     - order_manager_order : OrderEvent
-    - broker_interface_fill
+    - broker_interface_fill : FillOrder
 """
 
 import queue

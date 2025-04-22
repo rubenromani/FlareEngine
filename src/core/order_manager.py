@@ -39,7 +39,8 @@ class BrokerInterfaceMock:
                 quantity=order_event.quantity,
                 direction=order_event.direction,
                 fill_price=order_event.price if order_event.type != 'MARKET' else self._repo.get("last_prices")[order_event.symbol].close,
-                commission=0.0
+                commission=0.0,
+                order_ref=order_event.id
             )
             self._dispatcher.publish("broker_interface_fill", self, fill_event)
         except Exception as e:

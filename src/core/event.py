@@ -18,8 +18,16 @@ class Event:
     This class serves as the parent class for all events in the trading system.
     All specific event types should inherit from this class.
     """
-    pass
 
+    _id = 0
+
+    def __init__(self):
+        self._id = Event._id
+        Event._id += 1 
+
+    @property
+    def id(self):
+        return self._id
 
 class BarEvent(Event):
     """Event representing a new price bar.
@@ -39,6 +47,7 @@ class BarEvent(Event):
             bar (Bar): The price bar object.
             symbol (str): The financial instrument symbol.
         """
+        super.__init__(self)
         self._bar = bar
         self._symbol = symbol
         self._type = 'BAR'
@@ -76,14 +85,15 @@ class BarEvent(Event):
         Returns:
             str: A string containing all bar event details.
         """
-        return (f"{self._symbol}, "
-                f"D: {datetime.fromtimestamp(self._bar.timestamp).strftime('%Y-%m-%d %H:%M:%S')}, "
-                f"O: {self._bar.open}, "
-                f"H: {self._bar.high}, "
-                f"L: {self._bar.low}, "
-                f"C: {self._bar.close}, "
-                f"V: {self._bar.volume}, "
-                f"{self._type}")
+        return (f"ID: {self._id},"
+                f"Symbol: {self._symbol}, "
+                f"Datetime: {datetime.fromtimestamp(self._bar.timestamp).strftime('%Y-%m-%d %H:%M:%S')}, "
+                f"Open: {self._bar.open}, "
+                f"Hgh: {self._bar.high}, "
+                f"Low: {self._bar.low}, "
+                f"Close: {self._bar.close}, "
+                f"Volume: {self._bar.volume}, "
+                f"Event type: {self._type}")
 
 
 class OrderEvent(Event):
@@ -110,6 +120,7 @@ class OrderEvent(Event):
             direction (str): The direction of the order ('BUY' or 'SELL').
             price (float, optional): The price for limit and stop orders. Defaults to None.
         """
+        super.__init__(self)
         self._symbol = symbol
         self._order_type = order_type  # 'LIMIT', 'MARKET', 'STOP'
         self._quantity = quantity
@@ -177,12 +188,13 @@ class OrderEvent(Event):
         Returns:
             str: A string containing all order details.
         """
-        return (f"{self._symbol}, "
-                f"{self._order_type}, "
-                f"{self._quantity}, "
-                f"{self._direction}, "
-                f"{self._price}, "
-                f"{self._type}")
+        return (f"ID: {self._id},"
+                f"Symbol: {self._symbol}, "
+                f"Order type: {self._order_type}, "
+                f"Quantity: {self._quantity}, "
+                f"Direction: {self._direction}, "
+                f"Price: {self._price}, "
+                f"Event type: {self._type}")
 
 
 class FillEvent(Event):
@@ -200,7 +212,7 @@ class FillEvent(Event):
         type (str): The event type identifier, always 'FILL'.
     """
 
-    def __init__(self, timestamp: int, symbol: str, quantity: int, direction: str, fill_price: float, commission: float=None):
+    def __init__(self, timestamp: int, symbol: str, quantity: int, direction: str, fill_price: float, commission: float=None, order_ref: int):
         """Initialize a new fill event.
         
         Args:
@@ -211,12 +223,14 @@ class FillEvent(Event):
             fill_price (float): The price at which the order was filled.
             commission (float, optional): The commission charged for the transaction. Defaults to None.
         """
+        super.__init__(self)
         self._timestamp = timestamp
         self._symbol = symbol
         self._quantity = quantity
         self._direction = direction
         self._fill_price = fill_price
         self._commission = commission or 0.0
+        self._order_ref = order_ref
         self._type = 'FILL'
     
     @property
@@ -282,16 +296,26 @@ class FillEvent(Event):
         """
         return self._type
     
+    @property
+    def order_ref(self) -> int:
+        """Get the related order reference id
+        
+        Returns:
+            int: The related order reference id
+        """
+        return self._order_ref
+    
     def __str__(self):
         """String representation of the fill event.
         
         Returns:
             str: A string containing all fill event details.
         """
-        return (f"{self._timestamp}, "
-                f"{self._symbol}, "
-                f"{self._quantity}, "
-                f"{self._direction}, "
-                f"{self._fill_price}, "
-                f"{self._commission}, "
-                f"{self._type}")
+        return (f"ID: {self._id},"
+                f"Datetime: {datetime.fromtimestamp(self._bar.timestamp).strftime('%Y-%m-%d %H:%M:%S')}, "
+                f"Symbol: {self._symbol}, "
+                f"Quantity: {self._quantity}, "
+                f"Direction: {self._direction}, "
+                f"Fill price: {self._fill_price}, "
+                f"Commission: {self._commission}, "
+                f"Event type: {self._type}")
