@@ -13,7 +13,7 @@ Available events:
     - strategy_order : OrderEvent
     - risk_manager_orer : OrderEvent
     - order_manager_order : OrderEvent
-    
+    - broker_interface_fill
 """
 
 import queue
@@ -49,13 +49,18 @@ class Dispatcher:
                 cls._instance = super(Dispatcher, cls).__new__(cls)
                 cls._instance.subscribers = {}
                 cls._instance.subscribers_lock = threading.Lock()
+                cls._instance.message_queue = queue.Queue()
+                cls._instance.worker_thread = None
+                cls._instance.running = False
         return cls._instance
     
     def __init__(self):
-        """Initialize the message queue and start the worker thread."""
-        self.message_queue = queue.Queue()
-        self.worker_thread = threading.Thread(target=self._process_queue, daemon=True)
-        self.worker_thread.start()
+        """Initialize the message queue and start the worker thread."""        
+        if not hasattr(self, '_running') or not self._running:
+            self.message_queue = queue.Queue()
+            self._running = True
+            self.worker_thread = threading.Thread(target=self._process_queue, daemon=True)
+            self.worker_thread.start()
     
     def subscribe(self, event_type, callback):
         """Subscribe to a specific event type.

@@ -22,7 +22,7 @@ class Portfolio:
         self._repo.set("available_balance", self._available_balance);
     
     def _data_streams_subscription(self):
-        data_streams = self._repo.get("data_streams")
+        data_streams = self._repo.get("data_streams", default=[])
         for data_stream in data_streams:
             self._dispatcher.subscribe(data_stream, self._on_new_bar)
 

@@ -8,11 +8,11 @@ class RiskManager:
         self.dispatcher = Dispatcher()
         self.repo = SharedRepository()
 
-        self.dispatcher.subscribe(f"strategy_order", self._on_strategy_order)
+        self.dispatcher.subscribe("strategy_order", self._on_strategy_order)
 
-    def _on_strategy_order(self, order_event: OrderEvent):
+    def _on_strategy_order(self, sender, order_event: OrderEvent):
         self._emit_order(order_event)
         #raise NotImplementedError("_on_newstrategy_order method must be implemented in subclasses")
     
     def _emit_order(self, order_event: OrderEvent):
-        self.dispatcher.publish(f"risk_manager_order", self, order_event)
+        self.dispatcher.publish("risk_manager_order", self, order_event)
