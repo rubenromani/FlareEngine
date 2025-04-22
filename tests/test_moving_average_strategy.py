@@ -4,6 +4,8 @@ from src.core.types import Timeframe
 from src.strategy.examples.moving_average_strategy import MovingAverageStrategy
 from src.core.data_manager import DataManager, BacktestDataStream
 from src.core.risk_manager import RiskManager
+from src.core.portfolio import Portfolio
+from src.core.order_manager import OrderManager, BrokerInterfaceMock
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 spy_data_1d_path = os.path.join(script_dir, "..", "data", "spy.csv")
@@ -20,7 +22,10 @@ class TestMovingAverageStrategy(unittest.TestCase):
         self.moving_average_strategy = MovingAverageStrategy(symbol=self.symbol_synth, timeframe=self.synth_timeframe)
         self.data_stream_synth = BacktestDataStream(symbol=self.symbol_synth, timeframe=self.synth_timeframe, csv_filepath=synth_data_1h_path)
         self.data_manager = DataManager([self.data_stream_spy, self.data_stream_synth])
+        self.portfolio = Portfolio()
         self.risk_manager = RiskManager()
+        self.order_manager = OrderManager()
+        self.borker_interface = BrokerInterfaceMock()
 
         
 
