@@ -47,7 +47,7 @@ class BarEvent(Event):
             bar (Bar): The price bar object.
             symbol (str): The financial instrument symbol.
         """
-        super.__init__(self)
+        super().__init__()
         self._bar = bar
         self._symbol = symbol
         self._type = 'BAR'
@@ -120,7 +120,7 @@ class OrderEvent(Event):
             direction (str): The direction of the order ('BUY' or 'SELL').
             price (float, optional): The price for limit and stop orders. Defaults to None.
         """
-        super.__init__(self)
+        super().__init__()
         self._symbol = symbol
         self._order_type = order_type  # 'LIMIT', 'MARKET', 'STOP'
         self._quantity = quantity
@@ -212,7 +212,7 @@ class FillEvent(Event):
         type (str): The event type identifier, always 'FILL'.
     """
 
-    def __init__(self, timestamp: int, symbol: str, quantity: int, direction: str, fill_price: float, commission: float=None, order_ref: int):
+    def __init__(self, timestamp: int, symbol: str, quantity: int, direction: str, fill_price: float, commission: float, order_ref: int):
         """Initialize a new fill event.
         
         Args:
@@ -223,7 +223,7 @@ class FillEvent(Event):
             fill_price (float): The price at which the order was filled.
             commission (float, optional): The commission charged for the transaction. Defaults to None.
         """
-        super.__init__(self)
+        super().__init__()
         self._timestamp = timestamp
         self._symbol = symbol
         self._quantity = quantity
@@ -312,7 +312,7 @@ class FillEvent(Event):
             str: A string containing all fill event details.
         """
         return (f"ID: {self._id},"
-                f"Datetime: {datetime.fromtimestamp(self._bar.timestamp).strftime('%Y-%m-%d %H:%M:%S')}, "
+                f"Datetime: {datetime.fromtimestamp(self.timestamp).strftime('%Y-%m-%d %H:%M:%S')}, "
                 f"Symbol: {self._symbol}, "
                 f"Quantity: {self._quantity}, "
                 f"Direction: {self._direction}, "
