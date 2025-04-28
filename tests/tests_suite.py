@@ -88,27 +88,6 @@ class TestTimeframe(unittest.TestCase):
         self.assertEqual(Timeframe.DAY_1.to_minutes(), 1440)
 
 
-class TestTransaction(unittest.TestCase):
-    """Tests for the Transaction class"""
-    
-    def test_transaction_initialization(self):
-        """Test correct initialization of a Transaction object"""
-        timestamp = int(time.time())
-        symbol = "AAPL"
-        quantity = 10
-        direction = "BUY"
-        price = 150.0
-        commission = 1.5
-        
-        transaction = Transaction(timestamp, symbol, quantity, direction, price, commission)
-        
-        self.assertEqual(transaction.timestamp, timestamp)
-        self.assertEqual(transaction.symbol, symbol)
-        self.assertEqual(transaction.quantity, quantity)
-        self.assertEqual(transaction.direction, direction)
-        self.assertEqual(transaction.price, price)
-        self.assertEqual(transaction.commission, commission)
-
 class TestEvent(unittest.TestCase):
     """Tests for event classes"""
     
@@ -153,8 +132,9 @@ class TestEvent(unittest.TestCase):
         direction = "BUY"
         fill_price = 150.0
         commission = 1.5
+        order_ref = 123  # Aggiunto order_ref
         
-        fill_event = FillEvent(timestamp, symbol, quantity, direction, fill_price, commission)
+        fill_event = FillEvent(timestamp, symbol, quantity, direction, fill_price, commission, order_ref)
         
         self.assertEqual(fill_event.timestamp, timestamp)
         self.assertEqual(fill_event.symbol, symbol)
@@ -162,6 +142,7 @@ class TestEvent(unittest.TestCase):
         self.assertEqual(fill_event.direction, direction)
         self.assertEqual(fill_event.fill_price, fill_price)
         self.assertEqual(fill_event.commission, commission)
+        self.assertEqual(fill_event.order_ref, order_ref)  # Test del nuovo attributo
         self.assertEqual(fill_event.type, "FILL")
         self.assertIn(symbol, str(fill_event))
         self.assertIn(direction, str(fill_event))
@@ -505,8 +486,9 @@ class TestBrokerInterfaceMock(unittest.TestCase):
             self.assertEqual(received_fill.symbol, test_order.symbol)
             self.assertEqual(received_fill.quantity, test_order.quantity)
             self.assertEqual(received_fill.direction, test_order.direction)
+            self.assertEqual(received_fill.order_ref, test_order.id)  # Verifica order_ref
             
-            # For a MARKET order, the fill_price should equal the order's price
+            # For a LIMIT order, the fill_price should equal the order's price
             self.assertEqual(received_fill.fill_price, test_order.price)
 
 class TestPortfolio(unittest.TestCase):
@@ -520,6 +502,18 @@ class TestPortfolio(unittest.TestCase):
         
         self.portfolio = Portfolio()
         self.repo = SharedRepository()
+        self.dispatcher = Dispatcher()
+        
+        # Creare dati di mercato simulati
+        timestamp = int(time.time())
+        self.test_bar_aapl = Bar(timestamp, 150.0, 155.0, 148.0, 152.0, 1000.0)
+        self.test_bar_msft = Bar(timestamp, 250.0, 255.0, 248.0, 252.0, 1000.0)
+        
+        # Aggiungere i prezzi di mercato al portfolio
+        self.portfolio._last_prices = {
+            "AAPL": self.test_bar_aapl,
+            "MSFT": self.test_bar_msft
+        }
         
     def test_initialization(self):
         """Test correct initialization of the Portfolio"""
@@ -530,6 +524,230 @@ class TestPortfolio(unittest.TestCase):
         
         # Verify that the available balance was saved in the repository
         self.assertEqual(self.repo.get("available_balance"), 100000.0)
+    
+    def test_update_balance_buy(self):
+        """Test balance update with a BUY order fill"""
+        # Simulate a BUY fill
+        fill_event = FillEvent(
+            timestamp=int(time.time()),
+            symbol="AAPL",
+            quantity=10,
+            direction="BUY",
+            fill_price=150.0,
+            commission=5.0,
+            order_ref=1
+        )
+        
+        initial_balance = self.portfolio._balance
+        self.portfolio._update_balance(fill_event)
+        
+        expected_balance = initial_balance - (10 * 150.0) - 5.0
+        self.assertEqual(self.portfolio._balance, expected_balance)
+    
+    def test_update_balance_sell(self):
+        """Test balance update with a SELL order fill"""
+        # Simulate a SELL fill
+        fill_event = FillEvent(
+            timestamp=int(time.time()),
+            symbol="AAPL",
+            quantity=10,
+            direction="SELL",
+            fill_price=150.0,
+            commission=5.0,
+            order_ref=1
+        )
+        
+        initial_balance = self.portfolio._balance
+        self.portfolio._update_balance(fill_event)
+        
+        expected_balance = initial_balance + (10 * 150.0) - 5.0
+        self.assertEqual(self.portfolio._balance, expected_balance)
+    
+    def test_update_positions(self):
+        """Test position update with BUY and SELL fills"""
+        # Simulate a BUY fill
+        buy_fill = FillEvent(
+            timestamp=int(time.time()),
+            symbol="AAPL",
+            quantity=10,
+            direction="BUY",
+            fill_price=150.0,
+            commission=5.0,
+            order_ref=1
+        )
+        
+        self.portfolio._update_positions(buy_fill)
+        self.assertEqual(self.portfolio._positions.get("AAPL"), 10)
+        
+        # Simulate a partial SELL fill
+        sell_fill = FillEvent(
+            timestamp=int(time.time()),
+            symbol="AAPL",
+            quantity=5,
+            direction="SELL",
+            fill_price=155.0,
+            commission=5.0,
+            order_ref=2
+        )
+        
+        self.portfolio._update_positions(sell_fill)
+        self.assertEqual(self.portfolio._positions.get("AAPL"), 5)
+        
+        # Simulate a SELL that creates a short position
+        sell_fill = FillEvent(
+            timestamp=int(time.time()),
+            symbol="MSFT",
+            quantity=10,
+            direction="SELL",
+            fill_price=250.0,
+            commission=5.0,
+            order_ref=3
+        )
+        
+        self.portfolio._update_positions(sell_fill)
+        self.assertEqual(self.portfolio._positions.get("MSFT"), -10)
+    
+    def test_update_equity(self):
+        """Test equity calculation with long and short positions"""
+        # Add a long position
+        self.portfolio._positions["AAPL"] = 10
+        
+        # Add a short position
+        self.portfolio._positions["MSFT"] = -5
+        
+        # Calculate expected equity: 
+        # balance + (AAPL quantity * price) + (MSFT quantity * price)
+        expected_equity = 100000.0 + (10 * 152.0) + (-5 * 252.0)
+        
+        self.portfolio._update_equity()
+        self.assertEqual(self.portfolio._equity, expected_equity)
+    
+    def test_update_available_balance(self):
+        """Test available balance with pending orders"""
+        # Add a pending order
+        order = OrderEvent(
+            symbol="AAPL",
+            order_type="LIMIT",
+            quantity=10,
+            direction="BUY",
+            price=150.0
+        )
+        
+        # Set an arbitrary ID for the test
+        order._id = 1
+        
+        self.portfolio._pending_orders.append(order)
+        
+        initial_available = self.portfolio._available_balance
+        self.portfolio._update_available_balance()
+        
+        # Available balance should be reduced by the order value
+        expected_available = initial_available - (10 * 150.0)
+        self.assertEqual(self.portfolio._available_balance, expected_available)
+        
+        # Verify repository update
+        self.assertEqual(self.repo.get("available_balance"), expected_available)
+    
+    def test_order_execution_flow(self):
+        """Test the complete flow from order to fill"""
+        # Create an order event
+        order = OrderEvent(
+            symbol="AAPL",
+            order_type="MARKET",
+            quantity=10,
+            direction="BUY",
+            price=None
+        )
+        
+        # Set ID for testing
+        order._id = 123
+        
+        # Simulate order manager publishing the order
+        self.portfolio._on_order_manager_order(None, order)
+        
+        # Verify pending orders
+        self.assertEqual(len(self.portfolio._pending_orders), 1)
+        
+        # Create a fill event with the correct order_ref
+        fill = FillEvent(
+            timestamp=int(time.time()),
+            symbol="AAPL",
+            quantity=10,
+            direction="BUY",
+            fill_price=152.0,
+            commission=5.0,
+            order_ref=123  # Collegamento all'ordine originale
+        )
+        
+        # Initial values for comparison
+        initial_balance = self.portfolio._balance
+        
+        # Simulate broker interface publishing the fill
+        self.portfolio._on_broker_interface_fill(None, fill)
+        
+        # Verify results
+        self.assertEqual(len(self.portfolio._pending_orders), 0)  # Order removed
+        self.assertEqual(self.portfolio._positions.get("AAPL"), 10)  # Position updated
+        
+        # Balance reduced by order value + commission
+        expected_balance = initial_balance - (10 * 152.0) - 5.0
+        self.assertEqual(self.portfolio._balance, expected_balance)
+        
+        # Equity should be balance + positions
+        expected_equity = expected_balance + (10 * 152.0)
+        self.assertEqual(self.portfolio._equity, expected_equity)
+    
+    def test_check_margin_requirements(self):
+        """Test margin call detection"""
+        # Set up a large short position
+        self.portfolio._positions["MSFT"] = -500
+        
+        # Update equity
+        self.portfolio._update_equity()
+        
+        # Position value would be -500 * 252 = -126,000
+        # This should trigger a margin call because equity < position value
+        margin_call = self.portfolio._check_margin_requirements()
+        
+        # Should detect a margin call
+        self.assertTrue(margin_call)
+        
+        # Test with a small short position that doesn't trigger margin call
+        self.portfolio._positions.clear()
+        self.portfolio._positions["MSFT"] = -5
+        self.portfolio._update_equity()
+        
+        margin_call = self.portfolio._check_margin_requirements()
+        self.assertFalse(margin_call)
+    
+    def test_new_bar_processing(self):
+        """Test processing of new bar events"""
+        # Create a bar event
+        bar_event = BarEvent(self.test_bar_aapl, "AAPL")
+        
+        # Add a spy to check if methods are called
+        original_update_equity = self.portfolio._update_equity
+        original_check_margin = self.portfolio._check_margin_requirements
+        
+        call_counts = {"equity": 0, "margin": 0}
+        
+        def mock_update_equity():
+            call_counts["equity"] += 1
+            original_update_equity()
+            
+        def mock_check_margin():
+            call_counts["margin"] += 1
+            return original_check_margin()
+        
+        self.portfolio._update_equity = mock_update_equity
+        self.portfolio._check_margin_requirements = mock_check_margin
+        
+        # Simulate new bar event
+        self.portfolio._on_new_bar(None, bar_event)
+        
+        # Verify both methods were called
+        self.assertEqual(call_counts["equity"], 1)
+        self.assertEqual(call_counts["margin"], 1)
 
 
 if __name__ == '__main__':
